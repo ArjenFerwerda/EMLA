@@ -1,15 +1,17 @@
-from queue import *
-import itertools
+import os
+import sys
 import timeit
 from heapq import *
-import os, sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 import traceback
 
+
 class Solver:
     def solve(maze, agents):
         hbh(maze, agents)
+
 
 def solve(problem):
     number_of_agents = len(problem.starts)
@@ -22,7 +24,8 @@ def solve(problem):
             sub_list.append((waypoint[0], waypoint[1]))
         waypoints.append(sub_list)
     for i in range(number_of_agents):
-        agents.append(Agent((problem.starts[i][0], problem.starts[i][1]), (problem.goals[i][0], problem.goals[i][1]), waypoints[i]))
+        agents.append(Agent((problem.starts[i][0], problem.starts[i][1]), (problem.goals[i][0], problem.goals[i][1]),
+                            waypoints[i]))
 
     print(problem)
     maze = Map2(problem.grid, problem.width, problem.height)
@@ -32,7 +35,7 @@ def solve(problem):
     moves = hbh(maze, agents)
 
     stop = timeit.default_timer()
-    print('Time: ', (stop - start)*1000, "ms")
+    print('Time: ', (stop - start) * 1000, "ms")
 
     paths = []
     for agent_moves in moves:
@@ -49,6 +52,7 @@ def solve(problem):
     """
 
     return paths
+
 
 class Agent:
     def __init__(self, start, end, waypoints=[]):
@@ -116,7 +120,7 @@ class Map:
     def get_neighbours(self, x, y):
         positions = []
         # Check north
-        if (self.valid_position(x, y - 1)):
+        if self.valid_position(x, y - 1):
             positions.append((x, y - 1))
         # Check East
         if self.valid_position(x + 1, y):
@@ -130,7 +134,8 @@ class Map:
         return positions
 
     def valid_position(self, x, y):
-        return x >= 0 and y >= 0 and y <= self.length-1 and x <= self.width-1 and self.walls[x][y] != 0
+        return self.width - 1 >= x >= 0 != self.walls[x][y] and 0 <= y <= self.length - 1
+
     # Check whether a coordinate lies in the current Map.
     # @param position The position to be checked
     # @return Whether the position is in the current Map
@@ -152,7 +157,7 @@ class Map:
             string += "\n"
         return string
 
-    # Method that builds a mze from a file
+    # Method that builds a maze from a file
     # @param filePath Path to the file
     # @return A Map object with pheromones initialized to 0's inaccessible and 1's accessible.
     @staticmethod
@@ -182,11 +187,13 @@ class Map:
             traceback.print_exc()
             sys.exit()
 
+
 class Map2(Map):
     def valid_position(self, x, y):
-        return x >= 0 and y >= 0 and y <= self.length - 1 and x <= self.width - 1 and self.walls[y][x] != 1
+        return 0 <= x <= self.width - 1 and 0 <= y <= self.length - 1 and self.walls[y][x] != 1
 
-class Node():
+
+class Node:
     """A node class for A* Pathfinding"""
 
     def __init__(self, parent=None, position=None):
@@ -206,8 +213,10 @@ class Node():
 
     def __lt__(self, other):
         return self.f < other.f
+
     def __hash__(self):
         return hash(self.position)
+
 
 def astar(maze, agent, reserved):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
@@ -247,23 +256,11 @@ def astar(maze, agent, reserved):
             while current is not None:
                 path.append(current)
                 current = current.parent
-            return path[::-1] # Return reversed path
+            return path[::-1]  # Return reversed path
         # TODO Redo collisions to use a 2d array of positions, and then a list of times for that position.
         collision = False
-        for child in map(lambda x: Node(current_node, x), maze.get_neighbours(current_node.position[0], current_node.position[1])):
-            # Check for collision
-            # if child.position in reserved:
-            #     for time in reserved[child.position]:
-            #         # Check if its in the future.
-            #         if time > current_node.g:
-            #             # Check if the square we're waiting on is reserved in the future.
-            #             wait = construct_wait(current_node, current_node.g, time)
-            #             wait_move = Node(wait, child.position)
-            #             wait_move.g = wait.g + 1
-            #             wait_move.h = ((child.position[0] - end_node.position[0]) ** 2) + (
-            #                         (child.position[1] - end_node.position[1]) ** 2)
-            #             wait_move.f = wait_move.g + wait_move.f
-            #             open_list.append(wait_move)
+        for child in map(lambda x: Node(current_node, x),
+                         maze.get_neighbours(current_node.position[0], current_node.position[1])):
             if child.position in reserved and current_node.g + 1 in reserved[child.position]:
                 collision = True
                 # Check if we can wait here.
@@ -275,15 +272,16 @@ def astar(maze, agent, reserved):
                     wait.g = current_node.g + 1
                     wait_move = Node(wait, child.position)
                     wait_move.g = current_node.g + 2
-                    wait_move.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
+                    wait_move.h = ((child.position[0] - end_node.position[0]) ** 2) + (
+                                (child.position[1] - end_node.position[1]) ** 2)
                     wait_move.f = wait_move.g + wait_move.f
                     open_list.append(wait_move)
         if not collision:
             closed_list.append(current_node)
         # Loop through children
-        for child in map(lambda x: Node(current_node, x), maze.get_neighbours(current_node.position[0], current_node.position[1])):
+        for child in map(lambda x: Node(current_node, x),
+                         maze.get_neighbours(current_node.position[0], current_node.position[1])):
             print(child.position)
-            # TODO USE HASHSET
             # TODO DEAL WITH COLLISIONS.
             if child.position in reserved and current_node.g + 1 in reserved[child.position]:
                 continue
@@ -295,10 +293,9 @@ def astar(maze, agent, reserved):
             # TODO Compute proper f, g, and h values
             # Create the f, g, and h values
             child.g = current_node.g + 1
-            child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
+            child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
+                        (child.position[1] - end_node.position[1]) ** 2)
             child.f = child.g + child.h
-            # TODO USE HASHSET
-
             # Child is already in the open list
             for open_node in open_list:
                 if child == open_node and child.g >= open_node.g:
@@ -306,6 +303,7 @@ def astar(maze, agent, reserved):
             # Add the child to the open list
             open_list.append(child)
     print("NO PATH")
+
 
 def MLA(maze, agent, reserved):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
@@ -337,7 +335,8 @@ def MLA(maze, agent, reserved):
             n_prime = Node(current_node.parent, current_node.position)
             n_prime.l = 2
             n_prime.g = current_node.g
-            n_prime.h = abs(n_prime.position[0] - end_node.position[0]) + abs(n_prime.position[1] - end_node.position[1])
+            n_prime.h = abs(n_prime.position[0] - end_node.position[0]) + abs(
+                n_prime.position[1] - end_node.position[1])
             n_prime.f = n_prime.g + n_prime.h
             closed_list = set()
             open_list = []
@@ -349,26 +348,11 @@ def MLA(maze, agent, reserved):
             while current is not None:
                 path.append(current)
                 current = current.parent
-            return path[::-1] # Return reversed path
+            return path[::-1]  # Return reversed path
         # Loop through children
-        collision = False
         for child in map(lambda x: Node(current_node, x),
                          maze.get_neighbours(current_node.position[0], current_node.position[1])):
-            # Check for collision
-            # if child.position in reserved:
-            #     for time in reserved[child.position]:
-            #         # Check if its in the future.
-            #         if time > current_node.g:
-            #             # Check if the square we're waiting on is reserved in the future.
-            #             wait = construct_wait(current_node, current_node.g, time)
-            #             wait_move = Node(wait, child.position)
-            #             wait_move.g = wait.g + 1
-            #             wait_move.h = ((child.position[0] - end_node.position[0]) ** 2) + (
-            #                         (child.position[1] - end_node.position[1]) ** 2)
-            #             wait_move.f = wait_move.g + wait_move.f
-            #             open_list.append(wait_move)
             if child.position in reserved and current_node.g + 1 in reserved[child.position]:
-                collision = True
                 # Check if we can wait here.
                 if current_node.position in reserved and current_node.g + 1 in reserved[child.position]:
                     closed_list.add(current_node)
@@ -379,12 +363,12 @@ def MLA(maze, agent, reserved):
                     wait_move = Node(wait, child.position)
                     wait_move.g = current_node.g + 2
                     wait_move.h = ((child.position[0] - end_node.position[0]) ** 2) + (
-                                (child.position[1] - end_node.position[1]) ** 2)
+                            (child.position[1] - end_node.position[1]) ** 2)
                     wait_move.f = wait_move.g + wait_move.f
                     heappush(open_list, wait_move)
-        for child in map(lambda x: Node(current_node, x), maze.get_neighbours(current_node.position[0], current_node.position[1])):
+        for child in map(lambda x: Node(current_node, x),
+                         maze.get_neighbours(current_node.position[0], current_node.position[1])):
             print(child.position)
-            # TODO USE HASHSET
             if child.position in reserved and current_node.g + 1 in reserved[child.position]:
                 continue
             # In case of collision
@@ -401,15 +385,10 @@ def MLA(maze, agent, reserved):
             else:
                 child.h = abs(child.position[0] - end_node.position[0]) + abs(child.position[1] - end_node.position[1])
             child.f = child.g + child.h
-
-            #TODO See if this is necessary, since we already sort the list.
-            # # Child is already in the open list
-            # for open_node in open_list:
-            #     if child == open_node and child.g >= open_node.g:
-            #         continue
-            # Add the child to the open list
             heappush(open_list, child)
     print("NO PATH")
+
+
 def construct_wait(node, start, end):
     wait_node = node
     while start <= end:
@@ -418,6 +397,7 @@ def construct_wait(node, start, end):
         wait_node.g = g + 1
         start += 1
     return wait_node
+
 
 def hbh(maze, agents):
     paths = []
@@ -432,7 +412,6 @@ def hbh(maze, agents):
             if node.position in reserved:
                 reserved[node.position].append(node.g)
             else:
-                reserved[node.position] = [node.g, node.g-1]
+                reserved[node.position] = [node.g, node.g - 1]
         paths.append(nodes)
     return paths
-

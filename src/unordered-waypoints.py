@@ -1,9 +1,12 @@
-from solver import Node, Agent, Map, Map2, construct_wait
-from multi_waypoint import MLA
-from mapfw import MapfwBenchmarker
+import sys
 import timeit
 from heapq import *
-import sys
+
+from mapfw import MapfwBenchmarker
+
+from solver import Node, Agent, Map2, construct_wait
+
+
 def hbh(maze, agents):
     paths = []
     reserved = dict()
@@ -17,7 +20,8 @@ def hbh(maze, agents):
         resting = resting[1:]
         nodes = dynamicMLA(maze, agent, reserved, 0, resting)
 
-        # Adding reservations twice to ensure that no agent walks into another agent, nor that two agents convergence onto the same vertex.
+        # Adding reservations twice to ensure that no agent walks into another agent
+        # nor that two agents convergence onto the same vertex.
         for node in nodes[1:]:
             if node.position in reserved:
                 reserved[node.position].append(node.g)
@@ -26,7 +30,8 @@ def hbh(maze, agents):
         paths.append(nodes)
     return paths
 
-def dynamicMLA(maze, agent, reserved, start_wait = 0, resting = []):
+
+def dynamicMLA(maze, agent, reserved, start_wait=0, resting=[]):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
     # copy waypoints
     waypoints = agent.waypoints.copy()
@@ -58,8 +63,6 @@ def dynamicMLA(maze, agent, reserved, start_wait = 0, resting = []):
     end_node = Node(None, agent.end)
     end_node.g = end_node.h = end_node.f = 0
 
-
-
     # Loop until you find the end
     while len(open_list) > 0:
         # Get the current node
@@ -89,8 +92,6 @@ def dynamicMLA(maze, agent, reserved, start_wait = 0, resting = []):
                     current_node.position[1] - end_node.position[1])
             # N_prime is the new search node, which has the same position as the current node, but with new label and new h.
 
-
-
             n_prime.f = n_prime.g + n_prime.h
 
             closed_list = set()
@@ -103,34 +104,9 @@ def dynamicMLA(maze, agent, reserved, start_wait = 0, resting = []):
             while current is not None:
                 path.append(current)
                 current = current.parent
-            return path[::-1] # Return reversed path
-        # Loop through children
-        # for child in map(lambda x: Node(current_node, x),
-        #                  maze.get_neighbours(current_node.position[0], current_node.position[1])):
-        #     if child.position in reserved and current_node.g + 1 in reserved[child.position]:
-        #         collision = True
-        #         # Check if we can wait here. If not we dont consider this step.
-        #         if current_node.position in reserved and current_node.g + 1 in reserved[child.position]:
-        #             break
-        #         # We can wait, so add a node to wait and then move into that position.
-        #         elif child.position in reserved and current_node.g + 2 in reserved[child.position]:
-        #             break
-        #         else:
-        #             wait = Node(current_node, current_node.position)
-        #             wait.g = current_node.g + 1
-        #             wait_move = Node(wait, child.position)
-        #             wait_move.g = current_node.g + 2
-        #             if child.l == 1:
-        #                 child.h = abs(current_node.position[0] - waypoint.position[0]) + abs(
-        #                     current_node.position[1] - waypoint.position[1])
-        #             else:
-        #                 child.h = abs(child.position[0] - end_node.position[0]) + abs(
-        #                     child.position[1] - end_node.position[1])
-        #             wait_move.f = wait_move.g + wait_move.f
-        #             heappush(open_list, wait_move)
-        for child in map(lambda x: Node(current_node, x), maze.get_neighbours(current_node.position[0], current_node.position[1])):
-
-            # TODO USE HASHSET
+            return path[::-1]  # Return reversed path
+        for child in map(lambda x: Node(current_node, x),
+                         maze.get_neighbours(current_node.position[0], current_node.position[1])):
             if child.position in reserved and current_node.g + 1 in reserved[child.position]:
                 # Check if we can wait here. If not we dont consider this step.
                 if current_node.position in reserved and current_node.g + 1 in reserved[child.position]:
@@ -163,7 +139,8 @@ def dynamicMLA(maze, agent, reserved, start_wait = 0, resting = []):
             child.g = current_node.g + 1
             child.l = current_node.l
             if child.l == 1:
-                child.h = abs(current_node.position[0] - waypoint.position[0]) + abs(current_node.position[1] - waypoint.position[1])
+                child.h = abs(current_node.position[0] - waypoint.position[0]) + abs(
+                    current_node.position[1] - waypoint.position[1])
             else:
                 child.h = abs(child.position[0] - end_node.position[0]) + abs(child.position[1] - end_node.position[1])
             child.f = child.g + child.h
@@ -175,6 +152,7 @@ def dynamicMLA(maze, agent, reserved, start_wait = 0, resting = []):
     else:
         return dynamicMLA(maze, agent, reserved, start_wait + 1, resting)
 
+
 def select_waypoint(current_position, waypoints):
     w = waypoints[0]
     if len(waypoints) == 1:
@@ -183,18 +161,7 @@ def select_waypoint(current_position, waypoints):
     min_h = sys.maxsize
     min_index = -1
     for i, waypoint in enumerate(waypoints):
-        dist = abs(current_position[0] - waypoint[0]) + abs(current_position[1] - waypoint[1])
-        h = dist
-        # nearest_dist = sys.maxsize
-        # for w in waypoints:
-        #     if w == waypoint:
-        #         continue
-        #     dist_waypoints = abs(waypoint[0] - w[0]) + abs(waypoint[1] - w[1])
-        #     if dist_waypoints < nearest_dist:
-        #         nearest_dist = dist_waypoints
-        # # found nearest node and computed distance to node.
-        # h = dist + dist_waypoints
-        # if h is smaller than the smallest so far, update h and remember index.
+        h = abs(current_position[0] - waypoint[0]) + abs(current_position[1] - waypoint[1])
         if h < min_h:
             min_h = h
             min_index = i
@@ -202,26 +169,6 @@ def select_waypoint(current_position, waypoints):
     waypoints.remove(w)
     return w
 
-def preordering(maze, agents):
-    paths = []
-    reserved = dict()
-    resting = []
-    for start in map(lambda agent: agent.start, agents):
-        reserved[start] = [0]
-        resting.append(start)
-    for end in map(lambda agent: agent.end, agents):
-        resting.append(end)
-    for agent in agents:
-        resting = resting[1:]
-        nodes = MLA(maze, agent, reserved, 0, resting)
-        # Adding reservations twice to ensure that no agent walks into another agent, nor that two agents convergence onto the same vertex.
-        for node in nodes[1:]:
-            if node.position in reserved:
-                reserved[node.position].append(node.g)
-            else:
-                reserved[node.position] = [node.g, node.g - 1]
-        paths.append(nodes)
-    return paths
 
 def solve(problem):
     number_of_agents = len(problem.starts)
@@ -262,7 +209,7 @@ def solve(problem):
 
     return paths
 
+
 if __name__ == "__main__":
-    benchmarker = MapfwBenchmarker("<INSERT API TOKEN>", <INSERT BENCHMARK HERE>, "<INSERT ALGORITHM NAME>",
-                                   "<INSERT DESCRIPTION>", <TRUE OR FALSE>, solve, 1)
+    benchmarker = MapfwBenchmarker("42cf6ce8D2A5B954", 19, "EMLA*", "Jeroen PR", True, solve, 1)
     benchmarker.run()

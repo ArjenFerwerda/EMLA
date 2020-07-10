@@ -1,6 +1,7 @@
-from solver import Node, Agent, Map, Map2, construct_wait
 import timeit
 from heapq import *
+
+from solver import Node, Agent, Map2, construct_wait
 
 
 def hbh(maze, agents):
@@ -25,19 +26,20 @@ def hbh(maze, agents):
         paths.append(nodes)
     return paths
 
-def MLA(maze, agent, reserved, start_wait = 0, resting = []):
+
+def MLA(maze, agent, reserved, start_wait=0, resting=[]):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
     # Initialize both open and closed list
     open_list = []
     closed_list = set()
     print(start_wait)
     # Last label belongs to end node and is equal to number of waypoints + 1. Eg. 2 for an agent with 1 waypoint.
-    final_label = len(agent.waypoints)+1
+    final_label = len(agent.waypoints) + 1
     waypoint_label = 1
     start_node = Node(None, agent.start)
     start_node.g = start_node.h = start_node.f = 0
     if start_wait > 0:
-        open_list.append(construct_wait(start_node, 0, start_wait-1))
+        open_list.append(construct_wait(start_node, 0, start_wait - 1))
     else:
         # Add the start node
         open_list.append(start_node)
@@ -54,8 +56,6 @@ def MLA(maze, agent, reserved, start_wait = 0, resting = []):
     # mid_node.g = mid_node.h = mid_node.f = 0
     end_node = Node(None, agent.end)
     end_node.g = end_node.h = end_node.f = 0
-
-
 
     # Loop until you find the end
     while len(open_list) > 0:
@@ -79,7 +79,7 @@ def MLA(maze, agent, reserved, start_wait = 0, resting = []):
             n_prime = Node(current_node.parent, current_node.position)
             n_prime.g = current_node.g
 
-            n_prime.h = compute_h(current_node.l-1, agent.waypoints, end_node)
+            n_prime.h = compute_h(current_node.l - 1, agent.waypoints, end_node)
 
             n_prime.f = n_prime.g + n_prime.h
             n_prime.l = waypoint_label + 1
@@ -95,7 +95,7 @@ def MLA(maze, agent, reserved, start_wait = 0, resting = []):
             while current is not None:
                 path.append(current)
                 current = current.parent
-            return path[::-1] # Return reversed path
+            return path[::-1]  # Return reversed path
         # Loop through children
         collision = False
         for child in map(lambda x: Node(current_node, x),
@@ -122,7 +122,8 @@ def MLA(maze, agent, reserved, start_wait = 0, resting = []):
                             child.position[1] - end_node.position[1])
                     wait_move.f = wait_move.g + wait_move.f
                     heappush(open_list, wait_move)
-        for child in map(lambda x: Node(current_node, x), maze.get_neighbours(current_node.position[0], current_node.position[1])):
+        for child in map(lambda x: Node(current_node, x),
+                         maze.get_neighbours(current_node.position[0], current_node.position[1])):
 
             # TODO USE HASHSET
             if child.position in reserved and current_node.g + 1 in reserved[child.position]:
@@ -151,12 +152,15 @@ def MLA(maze, agent, reserved, start_wait = 0, resting = []):
     else:
         return MLA(maze, agent, reserved, start_wait * 2, resting)
 
+
 def compute_h(current_waypoint_index, waypoints, end_node):
-    #Computes the h value for a specific waypoint for an ordered set of waypoints. It equals the dist of each pair of subsequent waypoints, as well as the dist between the last waypoint and the end_node.
+    # Computes the h value for a specific waypoint for an ordered set of waypoints. It equals the dist of each pair of subsequent waypoints, as well as the dist between the last waypoint and the end_node.
     dist = abs(waypoints[-1][0] - end_node.position[0]) + abs(waypoints[-1][1] - end_node.position[1])
     for i, location in enumerate(waypoints[current_waypoint_index:-1], 1):
-        dist += abs(location[0] - waypoints[current_waypoint_index + i][0]) + abs(location[1] - waypoints[current_waypoint_index + i][1])
+        dist += abs(location[0] - waypoints[current_waypoint_index + i][0]) + abs(
+            location[1] - waypoints[current_waypoint_index + i][1])
     return dist
+
 
 def solve(problem):
     number_of_agents = len(problem.starts)
@@ -169,7 +173,8 @@ def solve(problem):
             sub_list.append((waypoint[0], waypoint[1]))
         waypoints.append(sub_list)
     for i in range(number_of_agents):
-        agents.append(Agent((problem.starts[i][0], problem.starts[i][1]), (problem.goals[i][0], problem.goals[i][1]), waypoints[i]))
+        agents.append(Agent((problem.starts[i][0], problem.starts[i][1]), (problem.goals[i][0], problem.goals[i][1]),
+                            waypoints[i]))
     maze = Map2(problem.grid, problem.width, problem.height)
     for i in agents:
         for j in agents:
@@ -180,7 +185,7 @@ def solve(problem):
     moves = hbh(maze, agents)
 
     stop = timeit.default_timer()
-    print('Time: ', (stop - start)*1000, "ms")
+    print('Time: ', (stop - start) * 1000, "ms")
 
     paths = []
     for agent_moves in moves:
