@@ -6,8 +6,10 @@ from mapfw import MapfwBenchmarker
 
 from solver import Node, Agent, Map2, construct_wait
 
-
-def hbh(maze, agents):
+# Function used to find paths for all agents.
+# maze contains the grid-based graph that agents are placed on.
+# agents is the list of agent objects.
+def find_paths(maze, agents):
     paths = []
     reserved = dict()
     resting = []
@@ -18,7 +20,7 @@ def hbh(maze, agents):
         resting.append(end)
     for agent in agents:
         resting = resting[1:]
-        nodes = dynamicMLA(maze, agent, reserved, 0, resting)
+        nodes = EMLA(maze, agent, reserved, 0, resting)
 
         # Adding reservations twice to ensure that no agent walks into another agent
         # nor that two agents convergence onto the same vertex.
@@ -30,10 +32,8 @@ def hbh(maze, agents):
         paths.append(nodes)
     return paths
 
-
-def dynamicMLA(maze, agent, reserved, start_wait=0, resting=[]):
-    """Returns a list of tuples as a path from the given start to the given end in the given maze"""
-    # copy waypoints
+# The EMLA function which finds a path for a single agent.
+def EMLA(maze, agent, reserved, start_wait=0, resting=[]):
     waypoints = agent.waypoints.copy()
     # Initialize both open and closed list
     open_list = []
@@ -58,12 +58,10 @@ def dynamicMLA(maze, agent, reserved, start_wait=0, resting=[]):
     else:
         waypoint = Node(None, (-1, -1))
 
-    # mid_node = Node(None, agent.waypoints[0])
-    # mid_node.g = mid_node.h = mid_node.f = 0
     end_node = Node(None, agent.end)
     end_node.g = end_node.h = end_node.f = 0
 
-    # Loop until you find the end
+    # Loop until you find the end or until there are no viable paths remaining.
     while len(open_list) > 0:
         # Get the current node
         current_node = heappop(open_list)
@@ -79,8 +77,9 @@ def dynamicMLA(maze, agent, reserved, start_wait=0, resting=[]):
             # construct new search node.
             n_prime = Node(current_node.parent, current_node.position)
             n_prime.g = current_node.g
-            # Waypoint is now the next waypoint.
 
+            # waypoint is the next waypoint the agent will visit.
+            # In the case there are no more waypoints left, set the waypoint to an unvisitable position, and update the heuristic based on the end goal.
             if len(waypoints) > 0:
                 waypoint = Node(None, select_waypoint(current_node.position, waypoints))
                 n_prime.h = abs(current_node.position[0] - waypoint.position[0]) + abs(
@@ -90,10 +89,11 @@ def dynamicMLA(maze, agent, reserved, start_wait=0, resting=[]):
                 waypoint = Node(None, (-1, -1))
                 n_prime.h = abs(current_node.position[0] - end_node.position[0]) + abs(
                     current_node.position[1] - end_node.position[1])
-            # N_prime is the new search node, which has the same position as the current node, but with new label and new h.
 
+            # N_prime is the new search node, which has the same position as the current node, but with new label and new h.
             n_prime.f = n_prime.g + n_prime.h
 
+            # Remove entries from the closed list, and open list.
             closed_list = set()
             open_list = []
             heappush(open_list, n_prime)
@@ -147,12 +147,15 @@ def dynamicMLA(maze, agent, reserved, start_wait=0, resting=[]):
 
             # Add the child to the open list
             heappush(open_list, child)
+    # If the agent reaches this point, it means that no path has been found, and the agent will attempt to wait at its starting position.
     if start_wait == 0:
-        return dynamicMLA(maze, agent, reserved, 1, resting)
+        return EMLA(maze, agent, reserved, 1, resting)
     else:
-        return dynamicMLA(maze, agent, reserved, start_wait + 1, resting)
+        return EMLA(maze, agent, reserved, start_wait + 1, resting)
 
-
+# This function is used to select the next waypoint to be visited by an agent.
+# current_position is the agents current location on the graph, and waypoints is the list of remaining unvisited waypoints for that agent.
+# The function retuns the location of the next waypoint the agent must visit.
 def select_waypoint(current_position, waypoints):
     w = waypoints[0]
     if len(waypoints) == 1:
@@ -170,6 +173,8 @@ def select_waypoint(current_position, waypoints):
     return w
 
 
+# This is the main "solving" function used to solve benchmark instances.
+# "problems" consist of lists of agent starting positions, lists of agent waypoints, and list of agent ending positions or "goals". Additionally, the problem contains information on the grid-based graph, including the grid itself, and its dimensions.
 def solve(problem):
     number_of_agents = len(problem.starts)
     agents = []
@@ -188,7 +193,7 @@ def solve(problem):
 
     start = timeit.default_timer()
 
-    moves = hbh(maze, agents)
+    moves = find_paths(maze, agents)
 
     stop = timeit.default_timer()
     print('Time: ', (stop - start) * 1000, "ms")
@@ -199,8 +204,9 @@ def solve(problem):
         for node in agent_moves:
             sub_path.append([node.position[0], node.position[1]])
         paths.append(sub_path)
+
     """
-    Now paths looks like:
+    Paths looks like:
 
     paths = [path agent 1, path agent 2, ..]
     path agent 1 = [pos agent 1 at time 0, pos agent 1 at time 1, .., pos agent 1 at finishing time]
